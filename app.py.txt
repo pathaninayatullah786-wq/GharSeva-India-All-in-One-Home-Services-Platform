@@ -1,0 +1,807 @@
+
+import streamlit as st
+from datetime import date
+import random
+import uuid
+
+st.set_page_config(
+    page_title="GharSeva India",
+    page_icon="🏡",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# -------------------- DESIGN --------------------
+
+st.markdown("""
+<style>
+.stApp {
+    background: linear-gradient(135deg, #f4f8ff, #fff7f0);
+}
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #102a43, #176b68);
+}
+[data-testid="stSidebar"] * {
+    color: white;
+}
+.hero {
+    padding: 35px;
+    border-radius: 22px;
+    color: white;
+    background: linear-gradient(120deg, #123b5d, #008f87);
+    margin-bottom: 25px;
+}
+.hero h1, .hero p {
+    color: white;
+}
+.price {
+    color: #087f5b;
+    font-size: 22px;
+    font-weight: bold;
+}
+div.stButton > button {
+    border-radius: 12px;
+    min-height: 43px;
+    font-weight: bold;
+}
+</style>
+""", unsafe_allow_html=True)
+
+
+def money(amount):
+    return f"₹{amount:,.0f}"
+
+
+def show_card(title, image, description, price=None):
+    with st.container(border=True):
+        st.image(image, use_container_width=True)
+        st.markdown(f"### {title}")
+        st.write(description)
+        if price is not None:
+            st.markdown(
+                f'<div class="price">{money(price)}</div>',
+                unsafe_allow_html=True
+            )
+
+
+# -------------------- PROPERTY DATA --------------------
+
+PROPERTIES = [
+    {"name": "Modern Family House", "city": "Hyderabad",
+     "kind": "House", "deal": "Rent", "price": 18000,
+     "image": "photo-1600585154340-be6161a56a0c"},
+    {"name": "City Apartment", "city": "Vijayawada",
+     "kind": "Flat", "deal": "Rent", "price": 14000,
+     "image": "photo-1600607687920-4e2a09cf159d"},
+    {"name": "Garden Villa", "city": "Visakhapatnam",
+     "kind": "House", "deal": "Rent", "price": 22000,
+     "image": "photo-1600566753190-17f0baa2a6c3"},
+    {"name": "Comfortable Family Flat", "city": "Guntur",
+     "kind": "Flat", "deal": "Rent", "price": 12000,
+     "image": "photo-1494526585095-c41746248156"},
+    {"name": "Premium Rental Home", "city": "Hyderabad",
+     "kind": "House", "deal": "Rent", "price": 25000,
+     "image": "photo-1600047509807-ba8f99d2cdde"},
+    {"name": "Small City Apartment", "city": "Guntur",
+     "kind": "Flat", "deal": "Rent", "price": 9500,
+     "image": "photo-1600210492486-724fe5c67fb0"},
+    {"name": "Bright Modern House", "city": "Tenali",
+     "kind": "House", "deal": "Rent", "price": 11000,
+     "image": "photo-1600607687939-ce8a6c25118c"},
+    {"name": "Luxury Apartment", "city": "Hyderabad",
+     "kind": "Flat", "deal": "Rent", "price": 30000,
+     "image": "photo-1600566753086-00f18fb6b3ea"},
+    {"name": "Independent Rental Home", "city": "Guntur",
+     "kind": "House", "deal": "Rent", "price": 13000,
+     "image": "photo-1600607687644-c7171b42498f"},
+    {"name": "Compact Family Flat", "city": "Vijayawada",
+     "kind": "Flat", "deal": "Rent", "price": 10500,
+     "image": "photo-1600210492493-0946911123ea"},
+    {"name": "Modern White House", "city": "Visakhapatnam",
+     "kind": "House", "deal": "Rent", "price": 20000,
+     "image": "photo-1600585154526-990dced4db0d"},
+    {"name": "Urban Studio Flat", "city": "Hyderabad",
+     "kind": "Flat", "deal": "Rent", "price": 16000,
+     "image": "photo-1600607687939-ce8a6c25118c"},
+    {"name": "Spacious Rental Villa", "city": "Vijayawada",
+     "kind": "House", "deal": "Rent", "price": 24000,
+     "image": "photo-1600566753190-17f0baa2a6c3"},
+
+    {"name": "Residential Plot", "city": "Guntur",
+     "kind": "Land", "deal": "Sale", "price": 1800000,
+     "image": "photo-1500382017468-9049fed747ef"},
+    {"name": "Independent House for Sale", "city": "Visakhapatnam",
+     "kind": "House", "deal": "Sale", "price": 6500000,
+     "image": "photo-1600607687939-ce8a6c25118c"},
+    {"name": "Open Agricultural Land", "city": "Tenali",
+     "kind": "Land", "deal": "Sale", "price": 2500000,
+     "image": "photo-1472396961693-142e6e269027"},
+    {"name": "Modern Apartment for Sale", "city": "Hyderabad",
+     "kind": "Flat", "deal": "Sale", "price": 7200000,
+     "image": "photo-1600607687920-4e2a09cf159d"},
+    {"name": "Commercial Building", "city": "Vijayawada",
+     "kind": "Building", "deal": "Sale", "price": 12000000,
+     "image": "photo-1486406146926-c627a92ad1ab"},
+    {"name": "Family Villa for Sale", "city": "Guntur",
+     "kind": "House", "deal": "Sale", "price": 5500000,
+     "image": "photo-1600585154340-be6161a56a0c"},
+    {"name": "Green Residential Plot", "city": "Tenali",
+     "kind": "Land", "deal": "Sale", "price": 2100000,
+     "image": "photo-1500382017468-9049fed747ef"},
+    {"name": "Office Property", "city": "Hyderabad",
+     "kind": "Building", "deal": "Sale", "price": 15000000,
+     "image": "photo-1497366754035-f200968a6e72"},
+    {"name": "Premium City Flat", "city": "Vijayawada",
+     "kind": "Flat", "deal": "Sale", "price": 4800000,
+     "image": "photo-1600210492486-724fe5c67fb0"},
+    {"name": "Large Family House", "city": "Visakhapatnam",
+     "kind": "House", "deal": "Sale", "price": 8500000,
+     "image": "photo-1600047509807-ba8f99d2cdde"},
+    {"name": "Residential Land", "city": "Guntur",
+     "kind": "Land", "deal": "Sale", "price": 3200000,
+     "image": "photo-1470071459604-3b5ec3a7fe05"},
+    {"name": "Business Building", "city": "Hyderabad",
+     "kind": "Building", "deal": "Sale", "price": 18000000,
+     "image": "photo-1497366811353-6870744d04b2"},
+]
+
+
+# -------------------- WORKERS AND TOOLS --------------------
+
+WORKER_DATA = [
+    ("Ravi Kumar", "Plumber", 700, "1621905252507-b35492cc74b4",
+     ["Pipe Wrench", "Basin Wrench", "Plier Set", "Teflon Tape"]),
+    ("Suresh Babu", "Carpenter", 900, "1621905251189-08b45d6a269e",
+     ["Wood Hammer", "Hand Saw", "Screwdriver Set", "Measuring Tape"]),
+    ("Imran Ali", "Painter", 1000, "1562259949-e8e7689d7828",
+     ["Paint Roller", "Brush Set", "Paint Tray", "Wall Scraper"]),
+    ("Kiran", "Cleaner", 500, "1581578731548-c64695cc6952",
+     ["Cleaning Brushes", "Floor Mop", "Bucket", "Rubber Gloves"]),
+    ("Arjun Singh", "Electrician", 800, "1621905251918-48416bd8575a",
+     ["Multimeter", "Wire Stripper", "Voltage Tester", "Insulated Screwdriver"]),
+    ("Manoj Reddy", "Mechanic", 900, "1487754180451-c456f719a1fc",
+     ["Spanner Set", "Socket Set", "Pliers", "Torque Wrench"]),
+    ("Ramesh Kumar", "Welder", 1100, "1504917595217-d4dc5ebe6122",
+     ["Welding Machine", "Welding Helmet", "Welding Gloves", "Angle Grinder"]),
+    ("Deepak Yadav", "Mason", 1000, "1503387762-592deb58ef4e",
+     ["Brick Trowel", "Spirit Level", "Plastering Trowel", "Mason Hammer"]),
+    ("Vijay Rao", "Gardener", 600, "1416879595882-3373a0480b5b",
+     ["Garden Shears", "Hand Trowel", "Garden Gloves", "Watering Can"]),
+    ("Rahul Das", "AC Technician", 900, "1621905252507-b35492cc74b4",
+     ["AC Gauge", "Clamp Meter", "Cleaning Brush", "Tool Bag"]),
+]
+
+TOOL_PHOTOS = [
+    "photo-1586864387967-d02ef85d93e8",
+    "photo-1504148455328-c376907d081c",
+    "photo-1530124566582-a618bc2615dc",
+    "photo-1581092160607-ee22621dd758",
+    "photo-1504148455328-c376907d081c",
+    "photo-1530124566582-a618bc2615dc",
+    "photo-1504917595217-d4dc5ebe6122",
+    "photo-1503387762-592deb58ef4e",
+    "photo-1416879595882-3373a0480b5b",
+    "photo-1581092160607-ee22621dd758",
+]
+
+WORKERS = []
+tool_number = 0
+
+for index, data in enumerate(WORKER_DATA):
+    worker_name, job, daily_price, worker_photo, tool_names = data
+
+    tools = []
+    for tool_name in tool_names:
+        tools.append({
+            "name": tool_name,
+            "price": 200 + tool_number * 75,
+            "image": TOOL_PHOTOS[tool_number % len(TOOL_PHOTOS)],
+            "description": f"{tool_name} for {job.lower()} work."
+        })
+        tool_number += 1
+
+    WORKERS.append({
+        "id": index + 1,
+        "name": worker_name,
+        "job": job,
+        "daily": daily_price,
+        "weekly": daily_price * 5,
+        "monthly": daily_price * 20,
+        "image": worker_photo,
+        "description": f"Home-service professional for {job.lower()} tasks.",
+        "tools": tools
+    })
+
+
+def photo(photo_id, width=900):
+    return (
+        f"https://images.unsplash.com/{photo_id}"
+        f"?auto=format&fit=crop&w={width}&q=85"
+    )
+
+
+# -------------------- SESSION DATA --------------------
+
+defaults = {
+    "bookings": [],
+    "property_requests": [],
+    "cart": [],
+    "orders": [],
+    "selected_worker": None,
+    "selected_property": None,
+    "discount": 0,
+    "last_result": None
+}
+
+for key, value in defaults.items():
+    if key not in st.session_state:
+        st.session_state[key] = value
+
+
+# -------------------- SIDEBAR --------------------
+
+st.sidebar.title("🏡 GharSeva India")
+st.sidebar.caption("Your home, your services")
+
+page = st.sidebar.radio(
+    "Choose a page",
+    [
+        "🏠 Home",
+        "🏘️ Rent Houses",
+        "🏷️ Property Sales",
+        "🧰 Workers",
+        "🛒 Tools Shop",
+        "🎁 Spin & Offers",
+        "✅ Final Confirmation",
+        "📋 My Requests"
+    ]
+)
+
+st.sidebar.divider()
+st.sidebar.info(
+    "Demo project. Property and worker prices are examples, "
+    "not verified live offers."
+)
+
+
+# -------------------- HOME PAGE --------------------
+
+if page == "🏠 Home":
+    st.markdown("""
+    <div class="hero">
+        <h1>🏡 Welcome to GharSeva India</h1>
+        <p>Find homes, book trusted home services and explore useful tools.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    a, b, c = st.columns(3)
+
+    with a:
+        st.image(photo("1600585154340-be6161a56a0c"), use_container_width=True)
+        st.subheader("🏠 Find a Home")
+        st.write("Browse houses and flats for rent.")
+
+    with b:
+        st.image(photo("1621905252507-b35492cc74b4"), use_container_width=True)
+        st.subheader("🧰 Book a Worker")
+        st.write("Choose a home-service professional.")
+
+    with c:
+        st.image(photo("1586864387967-d02ef85d93e8"), use_container_width=True)
+        st.subheader("🛠️ Shop Tools")
+        st.write("Explore tools used by different workers.")
+
+    st.divider()
+    st.subheader("⭐ Featured Properties")
+
+    cols = st.columns(3)
+    for i, item in enumerate(PROPERTIES[:6]):
+        with cols[i % 3]:
+            show_card(
+                item["name"],
+                photo(item["image"]),
+                f'{item["city"]} · {item["kind"]} · {item["deal"]}',
+                item["price"]
+            )
+
+    st.success("Use the left menu to explore all sections.")
+
+
+# -------------------- RENT PAGE --------------------
+
+elif page == "🏘️ Rent Houses":
+    st.title("🏘️ Homes and Flats for Rent")
+    st.write("Explore 13 rental listings. Prices are illustrative.")
+
+    city_options = ["All Cities"] + sorted({
+        p["city"] for p in PROPERTIES if p["deal"] == "Rent"
+    })
+    city = st.selectbox("Choose city", city_options)
+
+    rent_items = [
+        p for p in PROPERTIES
+        if p["deal"] == "Rent" and
+        (city == "All Cities" or p["city"] == city)
+    ]
+
+    cols = st.columns(3)
+    for i, item in enumerate(rent_items):
+        with cols[i % 3]:
+            show_card(
+                item["name"],
+                photo(item["image"]),
+                f'{item["city"]} · {item["kind"]}',
+                item["price"]
+            )
+            if st.button("Select Property", key=f"rent_{i}"):
+                st.session_state.selected_property = item["name"]
+
+    selected = next(
+        (p for p in rent_items
+         if p["name"] == st.session_state.selected_property),
+        None
+    )
+
+    if selected:
+        st.divider()
+        st.subheader(f"Request: {selected['name']}")
+        with st.form("rent_request"):
+            customer = st.text_input("Your name")
+            phone = st.text_input("10-digit mobile number")
+            visit_date = st.date_input(
+                "Preferred visit date", min_value=date.today()
+            )
+            submitted = st.form_submit_button("Confirm Property Request")
+
+        if submitted:
+            if not customer.strip():
+                st.error("Please enter your name.")
+            elif not phone.isdigit() or len(phone) != 10:
+                st.error("Enter a valid 10-digit mobile number.")
+            else:
+                st.session_state.property_requests.append({
+                    "name": selected["name"],
+                    "deal": "Rent",
+                    "price": selected["price"],
+                    "customer": customer,
+                    "phone": phone,
+                    "date": str(visit_date)
+                })
+                st.session_state.last_result = {
+                    "type": "Rental request",
+                    "reference": uuid.uuid4().hex[:8].upper(),
+                    "amount": selected["price"],
+                    "payment": "Pay later"
+                }
+                st.success("Rental request saved!")
+                st.balloons()
+
+
+# -------------------- SALES PAGE --------------------
+
+elif page == "🏷️ Property Sales":
+    st.title("🏷️ Houses, Flats, Land and Buildings for Sale")
+
+    kinds = ["All Types", "House", "Flat", "Land", "Building"]
+    kind = st.selectbox("Property category", kinds)
+
+    items = [
+        p for p in PROPERTIES
+        if p["deal"] == "Sale" and
+        (kind == "All Types" or p["kind"] == kind)
+    ]
+
+    cols = st.columns(3)
+    for i, item in enumerate(items):
+        with cols[i % 3]:
+            show_card(
+                item["name"],
+                photo(item["image"]),
+                f'{item["city"]} · {item["kind"]}',
+                item["price"]
+            )
+            if st.button("Request a Visit", key=f"sale_{i}"):
+                st.session_state.selected_property = item["name"]
+
+    selected = next(
+        (p for p in items
+         if p["name"] == st.session_state.selected_property),
+        None
+    )
+
+    if selected:
+        st.divider()
+        st.subheader(f"Request a visit: {selected['name']}")
+
+        with st.form("sale_request"):
+            customer = st.text_input("Buyer name")
+            phone = st.text_input("10-digit mobile number")
+            visit_date = st.date_input(
+                "Preferred visit date", min_value=date.today()
+            )
+            submitted = st.form_submit_button("Confirm Visit Request")
+
+        if submitted:
+            if not customer.strip():
+                st.error("Please enter your name.")
+            elif not phone.isdigit() or len(phone) != 10:
+                st.error("Enter a valid 10-digit mobile number.")
+            else:
+                st.session_state.property_requests.append({
+                    "name": selected["name"],
+                    "deal": "Sale",
+                    "price": selected["price"],
+                    "customer": customer,
+                    "phone": phone,
+                    "date": str(visit_date)
+                })
+                st.session_state.last_result = {
+                    "type": "Property visit",
+                    "reference": uuid.uuid4().hex[:8].upper(),
+                    "amount": selected["price"],
+                    "payment": "Pay later"
+                }
+                st.success("Visit request saved!")
+                st.balloons()
+
+
+# -------------------- WORKER PAGE --------------------
+
+elif page == "🧰 Workers":
+    st.title("🧰 Choose Your Home-Service Worker")
+    st.write("Select one worker, then choose the service and payment method.")
+
+    job = st.selectbox(
+        "Worker type",
+        ["All Workers"] + [w["job"] for w in WORKERS]
+    )
+
+    shown_workers = [
+        w for w in WORKERS
+        if job == "All Workers" or w["job"] == job
+    ]
+
+    cols = st.columns(2)
+    for i, worker in enumerate(shown_workers):
+        with cols[i % 2]:
+            show_card(
+                worker["job"],
+                photo(worker["image"]),
+                f'{worker["name"]} · {worker["description"]}',
+                worker["daily"]
+            )
+            st.caption(
+                f'Weekly: {money(worker["weekly"])} · '
+                f'Monthly: {money(worker["monthly"])}'
+            )
+            if st.button("Select This Worker", key=f"choose_{worker['id']}"):
+                st.session_state.selected_worker = worker["id"]
+
+    worker = next(
+        (w for w in WORKERS
+         if w["id"] == st.session_state.selected_worker),
+        None
+    )
+
+    if worker:
+        st.divider()
+        st.header(f"📋 Book {worker['job']}")
+
+        st.image(photo(worker["image"]), width=400)
+        st.write(worker["description"])
+
+        with st.form(f"booking_{worker['id']}"):
+            period = st.radio(
+                "Service period",
+                ["Daily", "Weekly", "Monthly"],
+                horizontal=True
+            )
+            service_date = st.date_input(
+                "Service date", min_value=date.today()
+            )
+            customer = st.text_input("Your name")
+            phone = st.text_input("10-digit mobile number")
+            address = st.text_area("Service address")
+            payment = st.radio(
+                "Payment method",
+                ["Cash", "Online Payment (Demo)"],
+                horizontal=True
+            )
+            submitted = st.form_submit_button("Confirm Worker Booking")
+
+        prices = {
+            "Daily": worker["daily"],
+            "Weekly": worker["weekly"],
+            "Monthly": worker["monthly"]
+        }
+
+        st.markdown(f"### Service price: {money(prices[period])}")
+
+        if submitted:
+            if not customer.strip() or not address.strip():
+                st.error("Enter your name and service address.")
+            elif not phone.isdigit() or len(phone) != 10:
+                st.error("Enter a valid 10-digit mobile number.")
+            else:
+                booking = {
+                    "worker": worker["name"],
+                    "job": worker["job"],
+                    "period": period,
+                    "price": prices[period],
+                    "date": str(service_date),
+                    "customer": customer,
+                    "phone": phone,
+                    "address": address,
+                    "payment": payment,
+                    "reference": uuid.uuid4().hex[:8].upper()
+                }
+                st.session_state.bookings.append(booking)
+                st.session_state.last_result = {
+                    "type": "Worker booking",
+                    "reference": booking["reference"],
+                    "amount": booking["price"],
+                    "payment": payment
+                }
+                st.success("Worker selected and booking saved!")
+                st.balloons()
+
+        st.divider()
+        st.subheader(f"🛠️ Tools used by {worker['job']}")
+
+        tool_cols = st.columns(4)
+        for i, tool in enumerate(worker["tools"]):
+            with tool_cols[i % 4]:
+                show_card(
+                    tool["name"],
+                    photo(tool["image"], 600),
+                    tool["description"],
+                    tool["price"]
+                )
+                qty = st.number_input(
+                    "Quantity",
+                    min_value=1,
+                    max_value=10,
+                    value=1,
+                    key=f"worker_tool_{worker['id']}_{i}"
+                )
+                if st.button(
+                    "Add to Cart",
+                    key=f"add_worker_tool_{worker['id']}_{i}"
+                ):
+                    st.session_state.cart.append({
+                        "name": tool["name"],
+                        "price": tool["price"],
+                        "quantity": qty,
+                        "job": worker["job"]
+                    })
+                    st.success("Added to cart!")
+
+
+# -------------------- TOOLS SHOP --------------------
+
+elif page == "🛒 Tools Shop":
+    st.title("🛒 Home-Service Tools Shop")
+    st.write("Choose a worker category to see the related tools.")
+
+    job = st.selectbox(
+        "Tools for",
+        ["All Workers"] + [w["job"] for w in WORKERS]
+    )
+
+    all_tools = []
+    for worker in WORKERS:
+        if job != "All Workers" and worker["job"] != job:
+            continue
+        for tool in worker["tools"]:
+            all_tools.append({
+                **tool,
+                "job": worker["job"]
+            })
+
+    cols = st.columns(3)
+    for i, tool in enumerate(all_tools):
+        with cols[i % 3]:
+            show_card(
+                tool["name"],
+                photo(tool["image"], 600),
+                f'{tool["job"] if "job" in tool else job} · {tool["description"]}',
+                tool["price"]
+            )
+            qty = st.number_input(
+                "Quantity",
+                min_value=1,
+                max_value=10,
+                value=1,
+                key=f"shop_qty_{i}"
+            )
+            if st.button("Add to Cart", key=f"shop_add_{i}"):
+                st.session_state.cart.append({
+                    "name": tool["name"],
+                    "price": tool["price"],
+                    "quantity": qty,
+                    "job": tool["job"]
+                })
+                st.success("Tool added!")
+
+    st.divider()
+    st.header("🛍️ Your Cart")
+
+    if st.session_state.cart:
+        total = 0
+        for i, item in enumerate(st.session_state.cart):
+            subtotal = item["price"] * item["quantity"]
+            total += subtotal
+            st.write(
+                f'{i + 1}. {item["name"]} × {item["quantity"]} '
+                f'— {money(subtotal)}'
+            )
+
+        st.markdown(f"## Cart total: {money(total)}")
+
+        with st.form("tool_order_form"):
+            customer = st.text_input("Customer name")
+            phone = st.text_input("10-digit mobile number")
+            address = st.text_area("Delivery address")
+            payment = st.radio(
+                "Payment method",
+                ["Cash on Delivery", "Online Payment (Demo)"]
+            )
+            submitted = st.form_submit_button("Confirm Tool Order")
+
+        if submitted:
+            if not customer.strip() or not address.strip():
+                st.error("Enter customer name and delivery address.")
+            elif not phone.isdigit() or len(phone) != 10:
+                st.error("Enter a valid 10-digit mobile number.")
+            else:
+                order = {
+                    "reference": uuid.uuid4().hex[:8].upper(),
+                    "customer": customer,
+                    "phone": phone,
+                    "address": address,
+                    "items": list(st.session_state.cart),
+                    "total": total,
+                    "payment": payment
+                }
+                st.session_state.orders.append(order)
+                st.session_state.last_result = {
+                    "type": "Tool order",
+                    "reference": order["reference"],
+                    "amount": total,
+                    "payment": payment
+                }
+                st.session_state.cart = []
+                st.success("Order saved successfully!")
+                st.balloons()
+    else:
+        st.info("Your cart is empty. Add a tool to get started.")
+
+
+# -------------------- SPIN AND OFFERS --------------------
+
+elif page == "🎁 Spin & Offers":
+    st.title("🎁 Spin the Discount Wheel")
+    st.write("Try the demo wheel to receive a sample discount.")
+
+    st.markdown("""
+    <div class="hero">
+        <h1>🎡 Lucky Home-Service Wheel</h1>
+        <p>Spin once and discover your demo offer.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("""
+    <div style="font-size:32px;text-align:center;padding:20px">
+        🟢 5% &nbsp; 🔵 10% &nbsp; 🟡 15% &nbsp; 🟣 20% &nbsp; 🎉 FREE
+    </div>
+    """, unsafe_allow_html=True)
+
+    if st.button("🎡 SPIN NOW", use_container_width=True):
+        st.session_state.discount = random.choice([0, 5, 10, 15, 20])
+        st.session_state.discount_spun = True
+
+    if st.session_state.get("discount_spun", False):
+        if st.session_state.discount == 0:
+            st.success("🎉 You unlocked the free-service demo offer!")
+        else:
+            st.success(
+                f"🎉 Congratulations! You unlocked "
+                f"{st.session_state.discount}% off in this demo."
+            )
+        st.balloons()
+        st.caption(
+            "Demo offer only. This does not create a real discount "
+            "or charge a payment."
+        )
+
+
+# -------------------- FINAL CONFIRMATION --------------------
+
+elif page == "✅ Final Confirmation":
+    st.title("✅ Booking and Order Confirmation")
+
+    result = st.session_state.last_result
+
+    if result:
+        st.markdown("""
+        <div class="hero">
+            <h1>🎉 Successfully Completed!</h1>
+            <p>Your request has been recorded in this demo application.</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.success("✓ Success — your request is saved for this session.")
+        st.write(f'**Request type:** {result["type"]}')
+        st.write(f'**Reference number:** {result["reference"]}')
+        st.write(f'**Amount:** {money(result["amount"])}')
+        st.write(f'**Payment option:** {result["payment"]}')
+        st.balloons()
+    else:
+        st.info(
+            "No completed request yet. Select a worker, request a property, "
+            "or place a tool order first."
+        )
+
+    st.caption(
+        "Online payment is only a demonstration. No real payment is processed."
+    )
+
+
+# -------------------- MY REQUESTS --------------------
+
+elif page == "📋 My Requests":
+    st.title("📋 My Requests")
+
+    st.subheader("🏠 Property Requests")
+    if st.session_state.property_requests:
+        for item in reversed(st.session_state.property_requests):
+            with st.container(border=True):
+                st.write(f'**Property:** {item["name"]}')
+                st.write(f'**Type:** {item["deal"]}')
+                st.write(f'**Price:** {money(item["price"])}')
+                st.write(f'**Customer:** {item["customer"]}')
+                st.write(f'**Visit date:** {item["date"]}')
+    else:
+        st.info("No property requests yet.")
+
+    st.divider()
+    st.subheader("🧰 Worker Bookings")
+    if st.session_state.bookings:
+        for booking in reversed(st.session_state.bookings):
+            with st.container(border=True):
+                st.success("✓ Worker booking saved")
+                st.write(f'**Worker:** {booking["worker"]}')
+                st.write(f'**Service:** {booking["period"]}')
+                st.write(f'**Date:** {booking["date"]}')
+                st.write(f'**Price:** {money(booking["price"])}')
+                st.write(f'**Payment:** {booking["payment"]}')
+                st.write(f'**Reference:** {booking["reference"]}')
+    else:
+        st.info("No worker bookings yet.")
+
+    st.divider()
+    st.subheader("🛒 Tool Orders")
+    if st.session_state.orders:
+        for order in reversed(st.session_state.orders):
+            with st.container(border=True):
+                st.success("✓ Tool order saved")
+                st.write(f'**Order:** {order["reference"]}')
+                st.write(f'**Customer:** {order["customer"]}')
+                st.write(f'**Total:** {money(order["total"])}')
+                st.write(f'**Payment:** {order["payment"]}')
+                for item in order["items"]:
+                    st.write(
+                        f'- {item["name"]} × {item["quantity"]}'
+                    )
+    else:
+        st.info("No tool orders yet.")
+
+
+# -------------------- FOOTER --------------------
+
+st.divider()
+st.caption(
+    "GharSeva India | Built with Python and Streamlit. "
+    "Listings and prices are sample data. Verify property details "
+    "and service providers before real-world transactions."
+)
